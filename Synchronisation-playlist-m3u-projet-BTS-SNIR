@@ -1,0 +1,89 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstdlib>
+#include <ctime>
+#include <unistd.h>
+
+#ifdef __cpp_lib_filesystem
+    #include <filesystem>
+    namespace fs = std::filesystem;
+#else
+    #include <experimental/filesystem>
+    namespace fs = std::experimental::filesystem;
+#endif
+
+const std::string PLAYLIST_PATH = "/home/melel/Playlist/playlist1.m3u";
+const std::string INDEX_FILE = "/home/melel/Playlist/last_played_index.txt";
+const std::string PLAYLIST_DIR = "/home/melel/Playlist/Playlist1/";
+const int HEURE_DEBUT = 6;
+const int HEURE_FIN = 23;
+
+int obtenirDureeChanson(int index) {
+    std::ifstream file(PLAYLIST_PATH);
+    if (!file) return -1;
+    
+    std::string line;
+    int duree = -1;
+    
+    for (int i = 1; i <= index && std::getline(file, line); ++i) {
+        if (line.find("#EXTINF:") != std::string::npos) {
+            int debut = line.find(":") + 1;
+            int fin = line.find(",");
+            duree = std::stoi(line.substr(debut, fin - debut));
+        }
+    }
+    return duree;
+}
+
+int obtenirDernierIndexLu() {
+    std::ifstream file(INDEX_FILE);
+    if (!file) return -1;
+    
+    std::string line;
+    return (getline(file, line)) ? std::stoi(line) : -1;
+}
+
+void lireMusique(int index) {
+    std::ifstream file(PLAYLIST_PATH);
+    if (!file) return;
+    
+    std::string line;
+    for (int i = 1; i <= index && getline(file, line); ++i);
+    
+    std::string musique = line.substr(line.find(",") + 1);
+    int duree = obtenirDureeChanson(index);
+    
+    time_t now = time(0);
+    tm *timeinfo = localtime(&now);
+    
+    std::cout << "Lecture : " << musique << " - " << timeinfo->tm_hour << ":" << timeinfo->tm_min
+              << " (Durée : " << duree << "s)" << std::endl;
+    
+    std::string chemin_audio = PLAYLIST_DIR + musique;
+    system(("mpg123 " + chemin_audio).c_str());
+}
+
+void enregistrerIndexDerniereMusiqueLue(int index) {
+    std::ofstream file(INDEX_FILE);
+    if (file) file << index;
+}
+
+int main() {
+    system("sudo systemctl start systemd-timesyncd");
+    
+    while (true) {
+        time_t now = time(0);
+        tm *timeinfo = localtime(&now);
+        int heure_actuelle = timeinfo->tm_hour;
+        
+        if (heure_actuelle >= HEURE_DEBUT && heure_actuelle <= HEURE_FIN) {
+            int index = obtenirDernierIndexLu();
+            if (index == -1) index = 1;
+            lireMusique(index);
+            enregistrerIndexDerniereMusiqueLue(index + 1);
+        }
+        sleep(60);
+    }
+    return 0;
+}
