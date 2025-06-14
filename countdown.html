@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Countdown</title>
+  <style>body{font-family:Arial,sans-serif;background:#111;color:#fff;text-align:center;} .timer{margin:20px;font-size:1.5em;} </style>
+</head>
+<body>
+  <div class="timer" id="gta"></div>
+  <div class="timer" id="stranger"></div>
+  <script>
+    const gtaTarget = new Date("2026-05-26T00:00:00");
+    const strangerTarget = new Date("2025-11-26T00:00:00");
+    function update(){
+      const now = new Date();
+      const d1 = gtaTarget - now;
+      const d2 = strangerTarget - now;
+      document.getElementById("gta").textContent = d1 > 0 ? Math.floor(d1/86400000)+" jours restants pour GTA VI" : "GTA VI est là!";
+      document.getElementById("stranger").textContent = d2 > 0 ? Math.floor(d2/86400000)+" jours restants pour Stranger Things 5" : "Stranger Things 5 est là!";
+    }
+    update();
+    setInterval(update,1000);
+  </script>
+</body>
+</html>
